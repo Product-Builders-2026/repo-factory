@@ -1,0 +1,29 @@
+name: Create Repository
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  create:
+    if: contains(github.event.issue.title, 'Create Repo')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Extract fields
+        id: extract
+        run: |
+          echo "name=$(echo "${{ github.event.issue.body }}" | grep 'name:' | cut -d':' -f2 | xargs)" >> $GITHUB_OUTPUT
+          echo "description=$(echo "${{ github.event.issue.body }}" | grep 'description:' | cut -d':' -f2 | xargs)" >> $GITHUB_OUTPUT
+          echo "visibility=$(echo "${{ github.event.issue.body }}" | grep 'visibility:' | cut -d':' -f2 | xargs)" >> $GITHUB_OUTPUT
+
+      - name: Create repo
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.REPO_ADMIN_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/orgs/YOUR_ORG/repos \
+            -d "{\"name\":\"${{ steps.extract.outputs.name }}\",\"description\":\"${{ steps.extract.outputs.description }}\",\"private\":${{ steps.extract.outputs.visibility == 'private' }} }"
+
+
+  
